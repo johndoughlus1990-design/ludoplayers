@@ -1,10 +1,15 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/BrandLogo";
+import { hasPasswordLogin } from "@/lib/password-identity";
 
 export const Route = createFileRoute("/_authenticated/home")({
+  beforeLoad: ({ context }) => {
+    // Social-only accounts get a one-time screen to add an email + password login.
+    if (!hasPasswordLogin(context.user)) throw redirect({ to: "/set-password" });
+  },
   head: () => ({
     meta: [
       { title: "Home — REAL LUDO PLAYER" },
