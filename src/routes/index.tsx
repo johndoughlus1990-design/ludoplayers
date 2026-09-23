@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Dices, Flame, ShieldCheck, Trophy, Zap } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
@@ -10,16 +10,9 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "REAL LUDO PLAYER — Ludo Battle Lobby" },
-      {
-        name: "description",
-        content:
-          "Pick a game, set your entry amount and battle real players for cash prizes on REAL LUDO PLAYER.",
-      },
+      { name: "description", content: "Pick a game, set your entry amount and battle real players for cash prizes on REAL LUDO PLAYER." },
       { property: "og:title", content: "REAL LUDO PLAYER — Ludo Battle Lobby" },
-      {
-        property: "og:description",
-        content: "Pick a game, set your entry amount and battle real players for cash prizes.",
-      },
+      { property: "og:description", content: "Pick a game, set your entry amount and battle real players for cash prizes." },
     ],
   }),
   component: Home,
@@ -29,43 +22,31 @@ function Home() {
   const { user } = useUser();
   const { data: profile } = useProfile(user?.id);
   const { data: wallet } = useWallet(user?.id);
-  const navigate = useNavigate();
 
   const { data: stats } = useQuery({
     queryKey: ["home-stats"],
     queryFn: async () => {
       const [open, running] = await Promise.all([
         supabase.from("battles").select("id", { count: "exact", head: true }).eq("status", "open"),
-        supabase
-          .from("battles")
-          .select("id", { count: "exact", head: true })
-          .in("status", ["running", "result_pending"]),
+        supabase.from("battles").select("id", { count: "exact", head: true }).in("status", ["running", "result_pending"]),
       ]);
       return { open: open.count ?? 0, running: running.count ?? 0 };
     },
-    enabled: !!user,
   });
 
   return (
     <AppShell>
-      
-      {user ? (
-        <div className="mb-5 grid grid-cols-3 gap-2">
-          <StatCard label="Balance" value={rupees(
-            Number(wallet?.deposit_cash ?? 0) +
-              Number(wallet?.winning_cash ?? 0) +
-              Number(wallet?.bonus_cash ?? 0),
-          )} />
-          <Link to="/battles" search={{ view: "open" }} className="block rounded-xl border border-border/60 bg-card p-3 text-center transition-colors active:bg-secondary">
-            <p className="font-display text-base font-bold text-primary">{String(stats?.open ?? 0)}</p>
-            <p className="text-[11px] text-muted-foreground">Open</p>
-          </Link>
-          <Link to="/battles" search={{ view: "live" }} className="block rounded-xl border border-border/60 bg-card p-3 text-center transition-colors active:bg-secondary">
-            <p className="font-display text-base font-bold text-primary">{String(stats?.running ?? 0)}</p>
-            <p className="text-[11px] text-muted-foreground">Live</p>
-          </Link>
-        </div>
-      ) : null}
+      <div className="mb-5 grid grid-cols-3 gap-2">
+        <StatCard label="Balance" value={rupees(Number(wallet?.deposit_cash ?? 0) + Number(wallet?.winning_cash ?? 0) + Number(wallet?.bonus_cash ?? 0))} />
+        <Link to="/battles" search={{ view: "open" }} className="block rounded-xl border border-border/60 bg-card p-3 text-center transition-colors active:bg-secondary">
+          <p className="font-display text-base font-bold text-primary">{String(stats?.open ?? 0)}</p>
+          <p className="text-[11px] text-muted-foreground">Open</p>
+        </Link>
+        <Link to="/battles" search={{ view: "live" }} className="block rounded-xl border border-border/60 bg-card p-3 text-center transition-colors active:bg-secondary">
+          <p className="font-display text-base font-bold text-primary">{String(stats?.running ?? 0)}</p>
+          <p className="text-[11px] text-muted-foreground">Live</p>
+        </Link>
+      </div>
 
       {profile ? (
         <p className="mb-4 text-sm text-muted-foreground">
@@ -79,12 +60,7 @@ function Home() {
 
       <div className="space-y-3">
         {GAMES.map((game) => (
-          <Link
-            key={game.id}
-            to="/battles"
-            search={{ game: game.id }}
-            className="group flex items-center gap-4 rounded-2xl border border-border/60 bg-card p-4 transition-all hover:border-primary/50 hover:bg-secondary/40 active:bg-secondary"
-          >
+          <Link key={game.id} to="/battles" search={{ game: game.id }} className="group flex items-center gap-4 rounded-2xl border border-border/60 bg-card p-4 transition-all hover:border-primary/50 hover:bg-secondary/40 active:bg-secondary">
             <div className="gold-gradient flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl shadow-lg shadow-primary/10">
               <Dices className="h-11 w-11 text-background drop-shadow-md" strokeWidth={2.4} />
             </div>
@@ -103,10 +79,7 @@ function Home() {
         <Feature icon={Trophy} text="24x7 battles" />
       </div>
 
-      <Link
-        to="/rules"
-        className="mt-6 block rounded-xl border border-border/60 bg-card p-4 text-sm text-muted-foreground"
-      >
+      <Link to="/rules" className="mt-6 block rounded-xl border border-border/60 bg-card p-4 text-sm text-muted-foreground">
         Read the rules, fair play policy and support options →
       </Link>
     </AppShell>
@@ -114,19 +87,9 @@ function Home() {
 }
 
 function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-border/60 bg-card p-3 text-center">
-      <p className="font-display text-base font-bold text-primary">{value}</p>
-      <p className="text-[11px] text-muted-foreground">{label}</p>
-    </div>
-  );
+  return <div className="rounded-xl border border-border/60 bg-card p-3 text-center"><p className="font-display text-base font-bold text-primary">{value}</p><p className="text-[11px] text-muted-foreground">{label}</p></div>;
 }
 
 function Feature({ icon: Icon, text }: { icon: typeof Zap; text: string }) {
-  return (
-    <div className="rounded-xl border border-border/60 bg-card p-3">
-      <Icon className="mx-auto mb-1 h-4 w-4 text-accent" />
-      {text}
-    </div>
-  );
+  return <div className="rounded-xl border border-border/60 bg-card p-3"><Icon className="mx-auto mb-1 h-4 w-4 text-accent" />{text}</div>;
 }
