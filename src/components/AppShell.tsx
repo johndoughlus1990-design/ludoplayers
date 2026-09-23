@@ -11,6 +11,7 @@ import { rupees } from "@/lib/game";
 const TABS = [
   { to: "/", label: "Home", icon: Home },
   { to: "/battles", label: "My Battles", icon: Gamepad2 },
+  { to: "/wallet", label: "Wallet", icon: Wallet },
   { to: "/refer", label: "Refer", icon: Users },
   { to: "/profile", label: "Profile", icon: User },
 ] as const;
@@ -194,7 +195,7 @@ export function AppShell({
         <main className="flex-1 px-4 pb-28 pt-4" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} style={{ overscrollBehaviorY: "contain" }}>{children}</main>
 
         <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border/60 bg-card/95 backdrop-blur">
-          <div className="grid grid-cols-4">
+          <div className="grid grid-cols-5">
             {TABS.map((tab) => {
               const active = tab.to === "/" ? pathname === "/" : pathname.startsWith(tab.to);
               const Icon = tab.icon;
