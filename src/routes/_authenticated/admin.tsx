@@ -151,8 +151,46 @@ function AdminPage() {
     queryFn:async()=>{const {data,error}=await supabase.from("admin_upi_ids").select("*").order("created_at",{ascending:false});if(error)throw error;return data??[];},
   });
   const addUpi=useMutation({
-    mutationFn:async()=>{const {error}=await supabase.rpc("admin_add_upi_v2",{p_display_name:newUpiName||null,p_upi_id:newUpi});if(error)throw error;},
-    onSuccess:()=>{setNewUpi("");setNewUpiName("");qc.invalidateQueries({queryKey:["admin-upis"]});toast.success("UPI ID added");},
+    mutationFn:async()=>{
+      const upi = newUpi.trim().toLowerCase();
+      const name = newUpiName.trim() || null;
+      if (!upi) throw new Error("UPI ID is required.");
+
+      // Use a direct RLS-protected insert instead of an RPC. This avoids
+      // PostgREST function-signature/schema-cache issues in Vercel builds.
+      const { data: inserted, error } = await supabase
+        .from("admin_upi_ids")
+        .insert({
+          upi_id: upi,
+          display_name: name,
+          created_by: user!.id,
+          is_active: true,
+        })
+        .select("*")
+        .single();
+
+      if (error) throw error;
+
+      // Keep the Wallet payment settings synchronized with the newly active UPI.
+      const { error: settingsError } = await supabase
+        .from("payment_settings")
+        .upsert({
+          merchant_upi: upi,
+          merchant_name: name || "REAL LUDO PLAYER",
+          currency: "INR",
+          is_active: true,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "id" });
+
+      // The UPI insert is the primary operation. If payment_settings has a
+      // different constraint/configuration, do not hide the successful UPI add.
+      if (settingsError) {
+        console.warn("Payment settings sync skipped:", settingsError.message);
+      }
+
+      return inserted;
+    },
+    onSuccess:()=>{setNewUpi("");setNewUpiName("");qc.invalidateQueries({queryKey:["admin-upis"]});qc.invalidateQueries({queryKey:["payment-settings"]});toast.success("UPI ID added");},
     onError:(e:Error)=>toast.error(e.message)
   });
   const deleteUpi=useMutation({
