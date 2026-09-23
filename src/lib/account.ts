@@ -55,10 +55,21 @@ export function useIsAdmin(userId?: string) {
   return useQuery({
     queryKey: ["is-admin", userId],
     enabled: !!userId,
+    staleTime: 0,
+    gcTime: 0,
+    retry: 1,
     queryFn: async () => {
-      const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId!).eq("role", "admin").maybeSingle();
+      if (!userId) return false;
+
+      // Use the database SECURITY DEFINER helper instead of querying
+      // user_roles directly. This avoids RLS/policy/cache issues.
+      const { data, error } = await supabase.rpc("has_role", {
+        _user_id: userId,
+        _role: "admin",
+      });
+
       if (error) throw error;
-      return !!data;
+      return data === true;
     },
   });
 }
