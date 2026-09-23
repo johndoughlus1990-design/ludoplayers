@@ -28,6 +28,11 @@ function WalletPage() {
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState(100);
 
+  // Temporary payment fallback. Admin UPI management will be wired later.
+  // The QR remains dynamic because the selected deposit amount is encoded in the UPI URI.
+  const TEMP_MERCHANT_UPI = "9636277797-7@ybl";
+  const TEMP_MERCHANT_NAME = "REAL LUDO PLAYER";
+
   const paymentSettings = useQuery({
     queryKey: ["payment-settings"],
     enabled: !!user,
@@ -60,7 +65,7 @@ function WalletPage() {
 
   useEffect(() => {
     let cancelled = false;
-    const upi = paymentSettings.data?.merchant_upi;
+    const upi = paymentSettings.data?.merchant_upi || TEMP_MERCHANT_UPI;
     if (!upi || depositAmount <= 0) {
       setQrDataUrl("");
       return;
@@ -68,7 +73,7 @@ function WalletPage() {
 
     const params = new URLSearchParams({
       pa: upi,
-      pn: paymentSettings.data?.merchant_name ?? "Maja Muqablo",
+      pn: paymentSettings.data?.merchant_name ?? TEMP_MERCHANT_NAME,
       am: depositAmount.toFixed(2),
       cu: paymentSettings.data?.currency ?? "INR",
       tn: `Virtual Credits ${depositAmount}`,
@@ -140,7 +145,7 @@ function WalletPage() {
 
   const submitCreditRequest = useMutation({
     mutationFn: async () => {
-      if (!paymentSettings.data?.merchant_upi) {
+      const merchantUpi = paymentSettings.data?.merchant_upi || TEMP_MERCHANT_UPI;
         throw new Error("Payment settings are not configured.");
       }
       const cleanUtr = utr.trim();
@@ -152,8 +157,8 @@ function WalletPage() {
         user_id: user!.id,
         amount: depositAmount,
         utr: cleanUtr,
-        merchant_upi: paymentSettings.data.merchant_upi,
-        qr_reference: `upi://pay?pa=${encodeURIComponent(paymentSettings.data.merchant_upi)}&am=${depositAmount.toFixed(2)}&cu=INR`,
+        merchant_upi: merchantUpi,
+        qr_reference: `upi://pay?pa=${encodeURIComponent(merchantUpi)}&am=${depositAmount.toFixed(2)}&cu=INR`,
         payment_note: "Payment made for non-cashable virtual credits.",
       });
       if (error) throw error;
@@ -220,12 +225,12 @@ function WalletPage() {
 
             {paymentSettings.isLoading ? (
               <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
-            ) : paymentSettings.data?.merchant_upi && qrDataUrl ? (
+            ) : (paymentSettings.data?.merchant_upi || TEMP_MERCHANT_UPI) && qrDataUrl ? (
               <>
                 <div className="mt-3 rounded-xl border border-border/60 bg-white p-4 text-center">
                   <img src={qrDataUrl} alt="UPI payment QR code" className="mx-auto h-64 w-64 max-w-full" />
                   <p className="mt-3 text-sm font-semibold">Pay {rupees(depositAmount)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{paymentSettings.data.merchant_upi}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{paymentSettings.data?.merchant_upi || TEMP_MERCHANT_UPI}</p>
                   <p className="mt-1 text-[11px] text-muted-foreground">
                     This payment is for non-cashable virtual credits only.
                   </p>
@@ -234,7 +239,7 @@ function WalletPage() {
                   variant="outline"
                   className="mt-3 w-full"
                   onClick={() => {
-                    void navigator.clipboard.writeText(paymentSettings.data!.merchant_upi);
+                    void navigator.clipboard.writeText(paymentSettings.data?.merchant_upi || TEMP_MERCHANT_UPI);
                     toast.success("UPI ID copied");
                   }}
                 >
@@ -266,7 +271,7 @@ function WalletPage() {
             className="w-full"
             size="lg"
             onClick={() => submitCreditRequest.mutate()}
-            disabled={submitCreditRequest.isPending || depositAmount < 1 || !paymentSettings.data?.merchant_upi || utr.trim().length < 6}
+            disabled={submitCreditRequest.isPending || depositAmount < 1 || utr.trim().length < 6}
           >
             {submitCreditRequest.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Submit UTR for verification
