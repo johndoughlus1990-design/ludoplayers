@@ -151,13 +151,12 @@ function WalletPage() {
         throw new Error("Please enter the UTR / transaction reference.");
       }
 
-      const { error } = await supabase.from("credit_payment_requests").insert({
-        user_id: user!.id,
-        amount: depositAmount,
-        utr: cleanUtr,
-        merchant_upi: merchantUpi,
-        qr_reference: `upi://pay?pa=${encodeURIComponent(merchantUpi)}&am=${depositAmount.toFixed(2)}&cu=INR`,
-        payment_note: "Payment made for non-cashable virtual credits.",
+      const { error } = await supabase.rpc("submit_credit_payment_request", {
+        p_amount: depositAmount,
+        p_utr: cleanUtr,
+        p_merchant_upi: merchantUpi,
+        p_qr_reference: `upi://pay?pa=${encodeURIComponent(merchantUpi)}&am=${depositAmount.toFixed(2)}&cu=INR`,
+        p_payment_note: "Payment made for non-cashable virtual credits.",
       });
       if (error) throw error;
     },
