@@ -19,7 +19,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const { user } = useUser();
+  const { user, loading } = useUser();
   const { data: profile } = useProfile(user?.id);
   const { data: wallet } = useWallet(user?.id);
 
@@ -36,23 +36,42 @@ function Home() {
 
   return (
     <AppShell>
-      <div className="mb-5 grid grid-cols-3 gap-2">
-        <StatCard label="Balance" value={rupees(Number(wallet?.deposit_cash ?? 0) + Number(wallet?.winning_cash ?? 0) + Number(wallet?.bonus_cash ?? 0))} />
-        <Link to="/battles" search={{ view: "open" }} className="block rounded-xl border border-border/60 bg-card p-3 text-center transition-colors active:bg-secondary">
-          <p className="font-display text-base font-bold text-primary">{String(stats?.open ?? 0)}</p>
-          <p className="text-[11px] text-muted-foreground">Open</p>
-        </Link>
-        <Link to="/battles" search={{ view: "live" }} className="block rounded-xl border border-border/60 bg-card p-3 text-center transition-colors active:bg-secondary">
-          <p className="font-display text-base font-bold text-primary">{String(stats?.running ?? 0)}</p>
-          <p className="text-[11px] text-muted-foreground">Live</p>
-        </Link>
-      </div>
+      {!user && !loading ? (
+        <div className="glow-gold mb-5 rounded-2xl border border-primary/30 bg-card p-5">
+          <h1 className="font-display text-2xl font-bold leading-tight">
+            Play Ludo. <span className="text-primary">Win real cash.</span>
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Create a battle, share your room code and get paid the moment you win.
+          </p>
+          <Link
+            to="/auth"
+            className="gold-gradient mt-4 block rounded-xl py-3 text-center font-semibold text-background transition-opacity active:opacity-90"
+          >
+            Login / Register
+          </Link>
+        </div>
+      ) : (
+        <>
+          <div className="mb-5 grid grid-cols-3 gap-2">
+            <StatCard label="Balance" value={rupees(Number(wallet?.deposit_cash ?? 0) + Number(wallet?.winning_cash ?? 0) + Number(wallet?.bonus_cash ?? 0))} />
+            <Link to="/battles" search={{ view: "open" }} className="block rounded-xl border border-border/60 bg-card p-3 text-center transition-colors active:bg-secondary">
+              <p className="font-display text-base font-bold text-primary">{String(stats?.open ?? 0)}</p>
+              <p className="text-[11px] text-muted-foreground">Open</p>
+            </Link>
+            <Link to="/battles" search={{ view: "live" }} className="block rounded-xl border border-border/60 bg-card p-3 text-center transition-colors active:bg-secondary">
+              <p className="font-display text-base font-bold text-primary">{String(stats?.running ?? 0)}</p>
+              <p className="text-[11px] text-muted-foreground">Live</p>
+            </Link>
+          </div>
 
-      {profile ? (
-        <p className="mb-4 text-sm text-muted-foreground">
-          Welcome back, <span className="font-semibold text-foreground">{profile.username}</span> 👋
-        </p>
-      ) : null}
+          {profile ? (
+            <p className="mb-4 text-sm text-muted-foreground">
+              Welcome back, <span className="font-semibold text-foreground">{profile.username}</span> 👋
+            </p>
+          ) : null}
+        </>
+      )}
 
       <h2 className="mb-3 flex items-center gap-2 font-display text-base font-bold">
         <Flame className="h-4 w-4 text-primary" /> Choose your game
