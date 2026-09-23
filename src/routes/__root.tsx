@@ -7,8 +7,10 @@ import { Toaster } from "@/components/ui/sonner";
 function NotFoundComponent() {
   return <div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="max-w-md text-center"><h1 className="gold-text text-7xl font-bold">404</h1><h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2><p className="mt-2 text-sm text-muted-foreground">Something went wrong. Try again or head back home.</p><Link to="/" className="mt-6 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Go home</Link></div></div>;
 }
-function ErrorComponent({ reset }: { error: Error; reset: () => void }) {
-  return <div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="max-w-md text-center"><h1 className="text-xl font-semibold tracking-tight text-foreground">This page didn't load</h1><p className="mt-2 text-sm text-muted-foreground">Something went wrong. Try again or head back home.</p><button onClick={reset} className="mt-6 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Try again</button></div></div>;
+function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+  const message = error?.message || String(error || "Unknown error");
+  const stack = error?.stack || "";
+  return <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8"><div className="w-full max-w-2xl rounded-xl border border-destructive/30 bg-card p-6 shadow-lg"><h1 className="text-xl font-semibold tracking-tight text-foreground">App Error</h1><p className="mt-2 text-sm text-muted-foreground">The application hit a runtime error. The details below are shown so the exact problem can be fixed.</p><pre className="mt-4 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-4 text-xs text-foreground">{message}</pre>{stack && <pre className="mt-3 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-4 text-[10px] text-muted-foreground">{stack}</pre>}<div className="mt-5 flex gap-3"><button onClick={reset} className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Try again</button><Link to="/" className="inline-flex rounded-md border px-4 py-2 text-sm font-medium">Home</Link></div></div></div>;
 }
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({ meta: [
