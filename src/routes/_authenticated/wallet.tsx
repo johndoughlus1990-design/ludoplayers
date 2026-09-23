@@ -146,8 +146,6 @@ function WalletPage() {
   const submitCreditRequest = useMutation({
     mutationFn: async () => {
       const merchantUpi = paymentSettings.data?.merchant_upi || TEMP_MERCHANT_UPI;
-        throw new Error("Payment settings are not configured.");
-      }
       const cleanUtr = utr.trim();
       if (cleanUtr.length < 6) {
         throw new Error("Please enter the UTR / transaction reference.");
