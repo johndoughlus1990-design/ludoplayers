@@ -128,7 +128,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/auth'
     | '/admin'
     | '/battles'
     | '/kyc'
@@ -142,7 +141,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/auth'
     | '/admin'
     | '/battles'
     | '/kyc'
@@ -157,7 +155,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
-    | '/auth'
     | '/_authenticated/admin'
     | '/_authenticated/battles'
     | '/_authenticated/kyc'
