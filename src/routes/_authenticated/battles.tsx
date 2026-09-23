@@ -203,3 +203,32 @@ function BattlesPage() {
   );
 }
 
+
+
+function Section({title, icon: Icon, count, children}:{title:string;icon: typeof Trophy;count:number;children: React.ReactNode}) {
+  return <section className="mt-5 space-y-3"><div className="flex items-center justify-between"><h2 className="flex items-center gap-2 font-display text-lg font-bold"><Icon className="h-5 w-5 text-primary"/>{title}</h2><Badge variant="secondary">{count}</Badge></div>{children}</section>;
+}
+
+function Empty({text}:{text:string}) {
+  return <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">{text}</div>;
+}
+
+function BattleCard({battle,name,action}:{battle:BattleRow;name:string;action:React.ReactNode}) {
+  return <div className="rounded-2xl border border-border/60 bg-card p-4"><div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="font-semibold">{gameName(battle.game)}</p><p className="truncate text-xs text-muted-foreground">{name}</p></div><Badge>{battle.status}</Badge></div><div className="mt-3 grid grid-cols-2 gap-3 text-xs"><div><p className="text-muted-foreground">Entry</p><p className="font-semibold">{rupees(battle.amount)} Credits</p></div><div><p className="text-muted-foreground">Reward</p><p className="font-semibold text-accent">{rupees(battle.prize)} Credits</p></div></div><div className="mt-3 flex justify-end">{action}</div></div>;
+}
+
+function CreateBattleDialog({game}:{game:string}) {
+  const qc = useQueryClient();
+  const [open,setOpen] = useState(false);
+  const [amount,setAmount] = useState(String(BATTLE_AMOUNTS[0] ?? 10));
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const {data,error} = await supabase.rpc("create_battle",{p_game:game,p_amount:Number(amount)});
+      if(error) throw error;
+      return data;
+    },
+    onSuccess: () => { setOpen(false); qc.invalidateQueries(); toast.success("Battle created."); },
+    onError: (e:Error) => toast.error(e.message),
+  });
+  return <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button className="mb-5 w-full"><Plus className="h-4 w-4"/>Create New Battle</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>Create {gameName(game)} Battle</DialogTitle><DialogDescription>Choose the virtual-credit entry amount.</DialogDescription></DialogHeader><div className="space-y-2"><Label>Entry amount</Label><select value={amount} onChange={e=>setAmount(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">{BATTLE_AMOUNTS.map(a=><option key={a} value={a}>{rupees(a)} Credits</option>)}</select></div><DialogFooter><Button onClick={()=>mutation.mutate()} disabled={mutation.isPending}>{mutation.isPending?<Loader2 className="h-4 w-4 animate-spin"/>:"Create Battle"}</Button></DialogFooter></DialogContent></Dialog>;
+}
