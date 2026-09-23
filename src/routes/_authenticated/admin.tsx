@@ -12,7 +12,7 @@ import { useIsAdmin, useUser } from "@/lib/account";
 
 export const Route = createFileRoute("/_authenticated/admin")({ component: AdminPage });
 
-type Tab = "overview" | "matches" | "complaints" | "deposits" | "withdrawals" | "kyc" | "users";
+type Tab = "overview" | "matches" | "complaints" | "deposits" | "withdrawals" | "kyc" | "users" | "upi";
 
 function AdminPage() {
   const { user } = useUser();
@@ -23,6 +23,8 @@ function AdminPage() {
   const [adjustAmount, setAdjustAmount] = useState(100);
   const [adminNote, setAdminNote] = useState<Record<string,string>>({});
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [newUpi, setNewUpi] = useState("");
+  const [newUpiName, setNewUpiName] = useState("");
 
   const enabled = !!user && !!isAdmin;
 
@@ -144,6 +146,29 @@ function AdminPage() {
     },
     refetchInterval:10000,
   });
+  const upis=useQuery({
+    queryKey:["admin-upis"],enabled,
+    queryFn:async()=>{const {data,error}=await supabase.from("admin_upi_ids").select("*").order("created_at",{ascending:false});if(error)throw error;return data??[];},
+  });
+  const addUpi=useMutation({
+    mutationFn:async()=>{const {error}=await supabase.rpc("admin_add_upi",{p_upi_id:newUpi,p_display_name:newUpiName||null});if(error)throw error;},
+    onSuccess:()=>{setNewUpi("");setNewUpiName("");qc.invalidateQueries({queryKey:["admin-upis"]});toast.success("UPI ID added");},
+    onError:(e:Error)=>toast.error(e.message)
+  });
+  const deleteUpi=useMutation({
+    mutationFn:async(id:string)=>{const {error}=await supabase.rpc("admin_delete_upi",{p_id:id});if(error)throw error;},
+    onSuccess:()=>{qc.invalidateQueries({queryKey:["admin-upis"]});toast.success("UPI ID deleted");},
+    onError:(e:Error)=>toast.error(e.message)
+  });
+  const toggleUpi=useMutation({
+    mutationFn:async({id,active}:{id:string;active:boolean})=>{const {error}=await supabase.rpc("admin_set_upi_active",{p_id:id,p_active:active});if(error)throw error;},
+    onSuccess:()=>qc.invalidateQueries({queryKey:["admin-upis"]}),onError:(e:Error)=>toast.error(e.message)
+  });
+  const sendReset=useMutation({
+    mutationFn:async(email:string)=>{const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:"https://ludoplayers.lovable.app/auth?reset=1"});if(error)throw error;},
+    onSuccess:()=>toast.success("Password reset email requested"),onError:(e:Error)=>toast.error(e.message)
+  });
+
   const setUserActive=useMutation({
     mutationFn:async({userId,active}:{userId:string;active:boolean})=>{
       const {error}=await supabase.rpc("admin_set_user_active",{p_user:userId,p_active:active});
@@ -165,7 +190,7 @@ function AdminPage() {
   const pendingDeposits=(deposits.data??[]).filter(x=>x.status==="pending");
   const pendingWithdrawals=(withdrawals.data??[]).filter(x=>x.status==="pending"||x.status==="processed");
 
-  const tabs:[Tab,string][]=[["overview","Overview"],["matches","Matches"],["complaints","Complaints"],["deposits","Deposits"],["withdrawals","Withdrawals"],["kyc","KYC"],["users","Users"]];
+  const tabs:[Tab,string][]=[["overview","Overview"],["matches","Matches"],["complaints","Complaints"],["deposits","Deposits"],["withdrawals","Withdrawals"],["kyc","KYC"],["users","Users"],["upi","UPI"]];
 
   return <AppShell title="Admin Dashboard">
     <div className="rounded-2xl border border-border/60 bg-card p-4">
@@ -183,7 +208,7 @@ function AdminPage() {
       <Panel title="Deposit ledger" text={(deposits.data?.length ?? 0)+" payment records."} onClick={()=>setTab("deposits")}/>
       <Panel title="Withdrawal ledger" text={(withdrawals.data?.length ?? 0)+" records."} onClick={()=>setTab("withdrawals")}/>
       <Panel title="KYC center" text={kyc.data?.length??0+" submissions."} onClick={()=>setTab("kyc")}/>
-      <Panel title="Player management" text="Search and adjust virtual credits." onClick={()=>setTab("users")}/>
+      <Panel title="Player management" text="Search, credits, account state and reset email." onClick={()=>setTab("users")}/><Panel title="UPI management" text={(upis.data?.length??0)+" configured UPI IDs."} onClick={()=>setTab("upi")}/>
     </div>}
 
     {tab==="matches"&&<Section title="Match history & reviews" subtitle="All past matches plus result/dispute reviews.">{(matches.data??[]).map(m=><Card key={m.id}>
@@ -212,6 +237,12 @@ function AdminPage() {
       {w.status==="processed"&&<Button className="mt-3 w-full" onClick={()=>completeVirtualWithdrawal.mutate(w.id)} disabled={completeVirtualWithdrawal.isPending}><Check className="h-4 w-4"/>Mark internally completed</Button>}
     </Card>)}{!(withdrawals.data??[]).length&&<Empty text="No virtual-credit withdrawal requests yet."/>}</Section>}
 
+    {tab==="upi"&&<Section title="UPI ID Management" subtitle="Add multiple UPI IDs, enable or disable them, or remove an old ID.">
+      <Card><div className="grid gap-2 sm:grid-cols-3"><input value={newUpi} onChange={e=>setNewUpi(e.target.value)} placeholder="example@upi" className="h-10 rounded-lg border border-border bg-background px-3 text-sm"/><input value={newUpiName} onChange={e=>setNewUpiName(e.target.value)} placeholder="Display name (optional)" className="h-10 rounded-lg border border-border bg-background px-3 text-sm"/><Button disabled={!newUpi.trim()||addUpi.isPending} onClick={()=>addUpi.mutate()}><PlusCircle className="h-4 w-4"/>Add UPI</Button></div></Card>
+      {(upis.data??[]).map(x=><Card key={x.id}><div className="flex items-center justify-between gap-3"><div><p className="font-semibold">{x.upi_id}</p><p className="text-xs text-muted-foreground">{x.display_name||"No display name"} · {x.is_active?"Active":"Disabled"}</p></div><div className="flex gap-2"><Button size="sm" variant="outline" onClick={()=>toggleUpi.mutate({id:x.id,active:!x.is_active})}>{x.is_active?"Disable":"Enable"}</Button><Button size="sm" variant="destructive" onClick={()=>{if(window.confirm("Delete this UPI ID?"))deleteUpi.mutate(x.id)}}><X className="h-4 w-4"/>Delete</Button></div></div></Card>)}
+      {!(upis.data??[]).length&&<Empty text="No UPI IDs configured."/>}
+    </Section>}
+
     {tab==="kyc"&&<Section title="KYC Verification" subtitle="Review submitted identity documents.">{(kyc.data??[]).map(k=><Card key={k.id}><div className="flex justify-between"><div><p className="font-semibold">{k.full_name}</p><p className="text-xs text-muted-foreground">{k.doc_type} · {k.doc_number}</p></div><Badge>{k.status}</Badge></div><div className="mt-3 flex flex-wrap gap-2">{[["Front",k.document_front_url],["Back",k.document_back_url],["PAN",k.pan_document_url]].filter(([,u])=>!!u).map(([label,url])=><Button key={label} size="sm" variant="outline" onClick={async()=>{const {data,error}=await supabase.storage.from("kyc-docs").createSignedUrl(String(url),600);if(error)toast.error(error.message);else window.open(data.signedUrl,"_blank","noopener,noreferrer");}}><Eye className="h-4 w-4"/>View {label}</Button>)}</div>{k.status==="pending"&&<div className="mt-3 grid grid-cols-2 gap-2"><Button onClick={()=>reviewKyc.mutate({id:k.id,status:"approved"})}>Approve</Button><Button variant="outline" onClick={()=>reviewKyc.mutate({id:k.id,status:"rejected"})}>Reject</Button></div>}</Card>)}{!(kyc.data??[]).length&&<Empty text="No KYC submissions."/>}</Section>}
 
     {tab==="users"&&<Section title="User Management" subtitle="All registered players. View profile details, KYC status, match record and account state.">
@@ -231,7 +262,7 @@ function AdminPage() {
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           <Badge variant={u.kyc_status==="approved"?"default":u.kyc_status==="rejected"?"destructive":"secondary"}>KYC: {u.kyc_status}</Badge>
-          <Button size="sm" variant="outline" onClick={()=>setSelectedUserId(selectedUserId===u.id?null:u.id)}><Eye className="h-4 w-4"/>{selectedUserId===u.id?"Hide":"View"}</Button>
+          <Button size="sm" variant="outline" onClick={()=>setSelectedUserId(selectedUserId===u.id?null:u.id)}><Eye className="h-4 w-4"/>{selectedUserId===u.id?"Hide":"View"}</Button><Button size="sm" variant="outline" disabled={sendReset.isPending} onClick={()=>{const email=window.prompt("Enter this user login email");if(email)sendReset.mutate(email)}}>Reset password</Button>
           <Button size="sm" disabled={!adjustAmount||adjust.isPending} onClick={()=>adjust.mutate({userId:u.id,delta:adjustAmount})}><PlusCircle className="h-4 w-4"/>Add</Button>
           <Button size="sm" variant="outline" disabled={!adjustAmount||adjust.isPending} onClick={()=>adjust.mutate({userId:u.id,delta:-adjustAmount})}><MinusCircle className="h-4 w-4"/>Deduct</Button>
           <Button size="sm" variant={u.is_active?"destructive":"outline"} disabled={setUserActive.isPending||u.id===user?.id} onClick={()=>setUserActive.mutate({userId:u.id,active:!u.is_active})}><UserX className="h-4 w-4"/>{u.is_active?"Deactivate":"Activate"}</Button>
