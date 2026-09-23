@@ -19,7 +19,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const { user } = useUser();
+  const { user, loading } = useUser();
   const { data: profile } = useProfile(user?.id);
   const { data: wallet } = useWallet(user?.id);
 
