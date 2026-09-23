@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { BookOpen, HelpCircle, ShieldCheck, User, LockKeyhole } from "lucide-react";
+import { BookOpen, HelpCircle, ShieldCheck, User, LockKeyhole, LogOut } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,7 @@ function ProfilePage() {
   }
 
   async function saveMpin() {
-    if (!/^\\d{4}$/.test(mpin)) { toast.error("MPIN must be exactly 4 digits."); return; }
+    if (!/^\d{4}$/.test(mpin)) { toast.error("MPIN must be exactly 4 digits."); return; }
     localStorage.setItem("refwin_mpin_hash", await hashMpin(mpin));
     setMpin("");
     setMpinSet(true);
@@ -44,6 +44,19 @@ function ProfilePage() {
     localStorage.removeItem("refwin_mpin_hash");
     setMpinSet(false);
     toast.success("MPIN removed from this device.");
+  }
+
+  async function handleLogout() {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error(error.message || "Logout failed.");
+      return;
+    }
+
+    qc.clear();
+    localStorage.removeItem("refwin_mpin_hash");
+    toast.success("Logged out successfully.");
+    await navigate({ to: "/auth" });
   }
 
   return (
@@ -85,6 +98,16 @@ function ProfilePage() {
         <Row to="/rules" icon={<BookOpen className="h-5 w-5 text-primary" />} label="Rules & fair play" />
         <Row to="/support" icon={<HelpCircle className="h-5 w-5 text-primary" />} label="Help & support" />
         <Row to="/admin" icon={<ShieldCheck className="h-5 w-5 text-primary" />} label={isAdmin ? "Admin Panel" : "Admin Panel (admin only)"} />
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => void handleLogout()}
+          className="mt-2 h-12 w-full border-destructive/40 text-destructive hover:bg-destructive/10"
+        >
+          <LogOut className="mr-2 h-5 w-5" />
+          Logout
+        </Button>
       </div>
 
     </AppShell>
