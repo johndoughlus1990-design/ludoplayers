@@ -22,15 +22,16 @@ export const Route = createFileRoute("/auth")({
 });
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-type Mode = "login" | "signup";
+type Mode = "login" | "signup" | "forgot" | "reset";
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>("login");
+  const [mode, setMode] = useState<Mode>(() => new URLSearchParams(window.location.search).get("reset") === "1" ? "reset" : "login");
   const [busy, setBusy] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [resetSent, setResetSent] = useState(false);
 
 
   function validate(withConfirm: boolean) {
@@ -70,6 +71,48 @@ function AuthPage() {
     navigate({ to: "/", replace: true });
   }
 
+  async function sendReset() {
+    if (busy) return;
+    if (!emailPattern.test(email.trim())) {
+      toast.error("Enter a valid email address.");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: window.location.origin + "/auth?reset=1",
+    });
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setResetSent(true);
+    toast.success("Password reset link sent. Check your email.");
+  }
+
+  async function updatePassword() {
+    if (busy) return;
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+    if (password !== confirm) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Password updated successfully.");
+    setPassword("");
+    setConfirm("");
+    navigate({ to: "/", replace: true });
+  }
+
   async function signUp() {
     if (busy || !validate(true)) return;
     setBusy(true);
@@ -105,6 +148,23 @@ function AuthPage() {
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-5 shadow-lg">
+          {mode === "forgot" ? (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">Enter your registered email and we’ll send you a password reset link.</p>
+              <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" autoComplete="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+              {resetSent && <p className="text-xs text-muted-foreground">Check your inbox and spam folder for the reset email.</p>}
+              <Button className="w-full" disabled={busy} onClick={sendReset}>{busy ? "Sending…" : "Send Reset Link"}</Button>
+              <Button variant="outline" className="w-full" disabled={busy} onClick={() => { setMode("login"); setResetSent(false); }}>Back to Login</Button>
+            </div>
+          ) : mode === "reset" ? (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">Set a new password for your account.</p>
+              <div className="space-y-2"><Label htmlFor="password">New Password</Label><Input id="password" type="password" autoComplete="new-password" placeholder="Enter new password" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+              <div className="space-y-2"><Label htmlFor="confirm">Confirm Password</Label><Input id="confirm" type="password" autoComplete="new-password" placeholder="Re-enter new password" value={confirm} onChange={(e) => setConfirm(e.target.value)} /></div>
+              <Button className="w-full" disabled={busy} onClick={updatePassword}>{busy ? "Updating…" : "Update Password"}</Button>
+            </div>
+          ) : (
+          <>
           <div className="mb-5 rounded-lg border border-border/60 bg-secondary/30 px-3 py-2 text-center text-xs text-muted-foreground">
             Sign in or create your account using email and password.
           </div>
@@ -139,7 +199,12 @@ function AuthPage() {
                 <Button variant="outline" className="w-full" disabled={busy} onClick={() => { setMode("login"); setConfirm(""); }}>Login</Button>
               </>
             )}
+            {mode === "login" && (
+              <button type="button" className="w-full text-center text-xs font-medium text-primary hover:underline" onClick={() => { setMode("forgot"); setResetSent(false); }}>Forgot password?</button>
+            )}
           </div>
+          </>
+          )}
         </div>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">By continuing you agree to play fair and follow the app rules.</p>
