@@ -146,7 +146,7 @@ function AdminPage() {
       const ids=rows.map(x=>x.id);
       const {data:wallets}=ids.length?await supabase.from("wallets").select("user_id,bonus_cash").in("user_id",ids):{data:[]};
       const map=new Map((wallets??[]).map(x=>[x.user_id,x]));
-      return (data??[]).map(x=>({...x,wallet:map.get(x.id)}));
+      return rows.map(x=>({...x,wallet:map.get(x.id)}));
     },
     refetchInterval:10000,
   });
@@ -289,7 +289,7 @@ function AdminPage() {
 
     {tab==="users"&&<Section title="User Management" subtitle="All registered players. View profile details, KYC status, match record and account state.">
       <div className="flex gap-2">
-        <div className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"/><input value={userSearch} onChange={e=>setUserSearch(e.target.value)} placeholder="Search username or phone" className="h-10 w-full rounded-lg border border-border bg-card pl-9 pr-3 text-sm"/></div>
+        <div className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"/><input value={userSearch} onChange={e=>setUserSearch(e.target.value)} placeholder="Search username, phone or email" className="h-10 w-full rounded-lg border border-border bg-card pl-9 pr-3 text-sm"/></div>
         <input inputMode="numeric" value={adjustAmount} onChange={e=>setAdjustAmount(Number(e.target.value.replace(/\D/g,""))||0)} className="h-10 w-24 rounded-lg border border-border bg-card px-3 text-sm" aria-label="Credit adjustment amount"/>
       </div>
       <div className="text-xs text-muted-foreground">{adminUsers.data?.length??0} users loaded · Deactivation preserves historical matches.</div>
