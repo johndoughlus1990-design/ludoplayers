@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Dices, Flame, ShieldCheck, Trophy, Zap } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { Button } from "@/components/ui/button";
 import { GAMES, rupees } from "@/lib/game";
 import { useProfile, useUser, useWallet } from "@/lib/account";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,7 +26,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const { user, loading } = useUser();
+  const { user } = useUser();
   const { data: profile } = useProfile(user?.id);
   const { data: wallet } = useWallet(user?.id);
   const navigate = useNavigate();
@@ -49,20 +48,7 @@ function Home() {
 
   return (
     <AppShell>
-      {!user && !loading ? (
-        <div className="glow-gold mb-5 rounded-2xl bg-card p-5">
-          <h1 className="font-display text-2xl font-bold leading-tight">
-            Play Ludo. <span className="gold-text">Win real cash.</span>
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Create a battle, share your room code and get paid the moment you win.
-          </p>
-          <Button className="mt-4 w-full" size="lg" onClick={() => navigate({ to: "/auth" })}>
-            Login / Register
-          </Button>
-        </div>
-      ) : null}
-
+      
       {user ? (
         <div className="mb-5 grid grid-cols-3 gap-2">
           <StatCard label="Balance" value={rupees(
@@ -112,7 +98,7 @@ function Home() {
       </div>
 
       <div className="mt-6 grid grid-cols-3 gap-2 text-center text-[11px] text-muted-foreground">
-        <Feature icon={Zap} text="Instant payouts" />
+        <Feature icon={Zap} text="Instant results" />
         <Feature icon={ShieldCheck} text="Fair play checks" />
         <Feature icon={Trophy} text="24x7 battles" />
       </div>

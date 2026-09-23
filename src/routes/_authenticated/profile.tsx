@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { BookOpen, HelpCircle, LogOut, ShieldCheck, User, LockKeyhole, Fingerprint, Trash2 } from "lucide-react";
+import { BookOpen, HelpCircle, ShieldCheck, User, LockKeyhole } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,52 +46,6 @@ function ProfilePage() {
     toast.success("MPIN removed from this device.");
   }
 
-  async function registerPasskey() {
-    try {
-      const { error } = await supabase.auth.registerPasskey();
-      if (error) throw error;
-      toast.success("Biometric / device passkey added successfully.");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not add passkey.");
-    }
-  }
-
-  async function listPasskeys() {
-    try {
-      const { data, error } = await supabase.auth.passkey.list();
-      if (error) throw error;
-      if (!data?.length) {
-        toast.info("No biometric passkey is registered on this account.");
-        return;
-      }
-      toast.success(`${data.length} passkey(s) registered on this account.`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not read passkeys.");
-    }
-  }
-
-  async function removeAllPasskeys() {
-    try {
-      const { data, error } = await supabase.auth.passkey.list();
-      if (error) throw error;
-      if (!data?.length) { toast.info("No passkey to remove."); return; }
-      for (const passkey of data) {
-        const { error: deleteError } = await supabase.auth.passkey.delete({ passkeyId: passkey.id });
-        if (deleteError) throw deleteError;
-      }
-      toast.success("Biometric passkey removed from this account.");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not remove passkey.");
-    }
-  }
-
-  async function signOut() {
-    await qc.cancelQueries();
-    qc.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
-  }
-
   return (
     <AppShell>
       <div className="glow-gold rounded-2xl bg-card p-5">
@@ -128,26 +82,11 @@ function ProfilePage() {
             {mpinSet?<Button variant="outline" onClick={clearMpin}>Remove</Button>:null}
           </div>
         </div>
-        <div className="rounded-xl border border-border/60 bg-card p-4">
-          <div className="flex items-center gap-2"><Fingerprint className="h-5 w-5 text-primary"/><p className="font-semibold">Biometric / Passkey login</p></div>
-          <p className="mt-1 text-xs text-muted-foreground">Secure account login using your phone's fingerprint, face unlock, or device PIN. The biometric secret stays on your device.</p>
-          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <Button variant="outline" onClick={()=>void registerPasskey()}>Add</Button>
-            <Button variant="outline" onClick={()=>void listPasskeys()}>Check</Button>
-            <Button variant="outline" onClick={()=>void removeAllPasskeys()}><Trash2 className="mr-1 h-4 w-4"/>Remove</Button>
-          </div>
-        </div>
         <Row to="/rules" icon={<BookOpen className="h-5 w-5 text-primary" />} label="Rules & fair play" />
         <Row to="/support" icon={<HelpCircle className="h-5 w-5 text-primary" />} label="Help & support" />
         <Row to="/admin" icon={<ShieldCheck className="h-5 w-5 text-primary" />} label={isAdmin ? "Admin Panel" : "Admin Panel (admin only)"} />
       </div>
 
-      <button
-        onClick={signOut}
-        className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm font-semibold text-destructive"
-      >
-        <LogOut className="h-4 w-4" /> Sign out
-      </button>
     </AppShell>
   );
 }
