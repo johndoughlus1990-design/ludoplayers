@@ -134,12 +134,16 @@ function AdminPage() {
     queryKey:["admin-users",userSearch],
     enabled,
     queryFn:async()=>{
-      let q=supabase.from("profiles").select("id,username,phone,kyc_status,battles_won,battles_lost,created_at,is_active").order("created_at",{ascending:false}).limit(500);
-      const term=userSearch.trim();
-      if(term) q=q.or("username.ilike.%"+term+"%,phone.ilike.%"+term+"%");
-      const {data,error}=await q;
+      const {data,error}=await supabase.rpc("admin_list_registered_users");
       if(error)throw error;
-      const ids=(data??[]).map(x=>x.id);
+      let rows=data??[];
+      const term=userSearch.trim().toLowerCase();
+      if(term) rows=rows.filter(x=>
+        String(x.username??"").toLowerCase().includes(term) ||
+        String(x.phone??"").toLowerCase().includes(term) ||
+        String(x.email??"").toLowerCase().includes(term)
+      );
+      const ids=rows.map(x=>x.id);
       const {data:wallets}=ids.length?await supabase.from("wallets").select("user_id,bonus_cash").in("user_id",ids):{data:[]};
       const map=new Map((wallets??[]).map(x=>[x.user_id,x]));
       return (data??[]).map(x=>({...x,wallet:map.get(x.id)}));
