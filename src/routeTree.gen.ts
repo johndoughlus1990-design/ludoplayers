@@ -101,7 +101,6 @@ export interface FileRoutesByTo {
   '/rules': typeof AuthenticatedRulesRoute
   '/support': typeof AuthenticatedSupportRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
-  '/wallet': typeof AuthenticatedWalletRoute
   '/battle/$id': typeof AuthenticatedBattleIdRoute
 }
 export interface FileRoutesById {
@@ -145,7 +144,6 @@ export interface FileRouteTypes {
     | '/rules'
     | '/support'
     | '/transactions'
-    | '/wallet'
     | '/battle/$id'
   id:
     | '__root__'
@@ -279,7 +277,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRulesRoute: AuthenticatedRulesRoute,
   AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedTransactionsRoute: AuthenticatedTransactionsRoute,
-  AuthenticatedWalletRoute: AuthenticatedWalletRoute,
   AuthenticatedBattleIdRoute: AuthenticatedBattleIdRoute,
 }
 
