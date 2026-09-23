@@ -151,7 +151,7 @@ function AdminPage() {
     queryFn:async()=>{const {data,error}=await supabase.from("admin_upi_ids").select("*").order("created_at",{ascending:false});if(error)throw error;return data??[];},
   });
   const addUpi=useMutation({
-    mutationFn:async()=>{const {error}=await supabase.rpc("admin_add_upi",{p_upi_id:newUpi,p_display_name:newUpiName||null});if(error)throw error;},
+    mutationFn:async()=>{const {error}=await supabase.rpc("admin_add_upi_v2",{p_display_name:newUpiName||null,p_upi_id:newUpi});if(error)throw error;},
     onSuccess:()=>{setNewUpi("");setNewUpiName("");qc.invalidateQueries({queryKey:["admin-upis"]});toast.success("UPI ID added");},
     onError:(e:Error)=>toast.error(e.message)
   });
