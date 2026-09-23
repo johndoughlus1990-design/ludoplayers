@@ -17,7 +17,6 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
       new Headers(init.headers).forEach((value, key) => headers.set(key, value));
     }
 
-    // New Supabase API keys are opaque strings, not bearer JWTs.
     if (isNewSupabaseApiKey(supabaseKey) && headers.get('Authorization') === `Bearer ${supabaseKey}`) {
       headers.delete('Authorization');
     }
@@ -27,24 +26,13 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
-
 function createSupabaseClient() {
-  // Use import.meta.env for client-side (Vite build-time replacement)
-  // Fall back to process.env for SSR (server-side rendering)
-  // Git fallback for deployments where Lovable Cloud does not inject env vars.
-  // This is the Supabase publishable client configuration for this app.
-  const SUPABASE_URL = import.meta.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL'] || 'https://rxypglertkkwukbvakfe.supabase.co';
-  const SUPABASE_PUBLISHABLE_KEY = import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || process.env['SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_ty0_eBzm_oNrTAZCkbImkQ_SUxquh9r';
-
-  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-    const missing = [
-      ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
-      ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
-    ];
-    const message = `Missing Supabase configuration: ${missing.join(', ')}.`;
-    console.error(`[Supabase] ${message}`);
-    throw new Error(message);
-  }
+  // This Ludo deployment must use the same Supabase project where the
+  // application's SQL migrations and admin functions are installed.
+  // Do not allow a stale Lovable/Vercel environment variable to silently
+  // point the frontend at a different Supabase project.
+  const SUPABASE_URL = 'https://rxypglertkkwukbvakfe.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_ty0_eBzm_oNrTAZCkbImkQ_SUxquh9r';
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     global: {
@@ -61,12 +49,9 @@ function createSupabaseClient() {
 
 let _supabase: ReturnType<typeof createSupabaseClient> | undefined;
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
 export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>, {
   get(_, prop, receiver) {
     if (!_supabase) _supabase = createSupabaseClient();
     return Reflect.get(_supabase, prop, receiver);
   },
 });
-
