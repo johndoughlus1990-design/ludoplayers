@@ -8,9 +8,10 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
+    const isRecovery = new URLSearchParams(location.searchStr).get("reset") === "1";
     const { data } = await supabase.auth.getUser();
-    if (data.user) throw redirect({ to: "/" });
+    if (data.user && !isRecovery) throw redirect({ to: "/" });
   },
   head: () => ({
     meta: [
@@ -79,7 +80,7 @@ function AuthPage() {
     }
     setBusy(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: window.location.origin + "/auth?reset=1",
+      redirectTo: "https://ludoplayers.lovable.app/auth?reset=1",
     });
     setBusy(false);
     if (error) {
@@ -119,7 +120,7 @@ function AuthPage() {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: "https://ludoplayers.lovable.app/" },
     });
     setBusy(false);
     if (error) {
