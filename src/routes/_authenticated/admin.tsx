@@ -51,7 +51,7 @@ function AdminPage() {
   const deposits = useQuery({
     queryKey: ["admin-payment-requests"], enabled,
     queryFn: async () => {
-      const { data,error }=await supabase.from("credit_payment_requests").select("id,user_id,amount,utr,status,merchant_upi,created_at,processed_at,admin_note").order("created_at",{ascending:false}).limit(200);
+      const { data,error }=await supabase.from("deposit_requests").select("id,user_id,amount,utr,status,created_at,processed_at").order("created_at",{ascending:false}).limit(200);
       if(error) throw error;
       const ids=[...new Set((data??[]).map(x=>x.user_id))];
       const {data:profiles}=ids.length?await supabase.from("profiles").select("id,username,phone").in("id",ids):{data:[]};
@@ -123,11 +123,11 @@ function AdminPage() {
   const approvePayment=useMutation({
     mutationFn:async(r:{id:string,user_id:string,amount:number})=>{
       const {error:e1}=await supabase.rpc("admin_adjust_demo_credits",{p_user:r.user_id,p_delta:r.amount,p_note:"UPI payment verified by admin"});if(e1)throw e1;
-      const {error:e2}=await supabase.from("credit_payment_requests").update({status:"approved",processed_at:new Date().toISOString(),processed_by:user!.id,admin_note:"UTR verified; virtual credits added."}).eq("id",r.id).eq("status","pending");if(e2)throw e2;
+      const {error:e2}=await supabase.rpc("admin_approve_deposit_request",{p_id:r.id});if(e2)throw e2;
     },onSuccess:()=>{qc.invalidateQueries({queryKey:["admin-payment-requests"]});toast.success("Payment approved");},onError:(e:Error)=>toast.error(e.message)
   });
   const rejectPayment=useMutation({
-    mutationFn:async(id:string)=>{const {error}=await supabase.from("credit_payment_requests").update({status:"rejected",processed_at:new Date().toISOString(),processed_by:user!.id,admin_note:"Rejected by admin"}).eq("id",id).eq("status","pending");if(error)throw error;},
+    mutationFn:async(id:string)=>{const {error}=await supabase.rpc("admin_reject_deposit_request",{p_id:id});if(error)throw error;},
     onSuccess:()=>{qc.invalidateQueries({queryKey:["admin-payment-requests"]});toast.success("Payment rejected");},onError:(e:Error)=>toast.error(e.message)
   });
   const adminUsers=useQuery({
